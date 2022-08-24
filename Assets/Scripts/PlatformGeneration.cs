@@ -5,8 +5,8 @@ using Random = UnityEngine.Random;
 
 public class PlatformGeneration : MonoBehaviour
 {
-    [SerializeField] private GameObject platform;
     [SerializeField] private Transform spawnPoint;
+    [SerializeField] private GameObject destroyPoint;
 
     [SerializeField] private float minDistanceBetweenPlayforms;
     [SerializeField] private float maxDistanceBetweenPlayforms;
@@ -33,15 +33,15 @@ public class PlatformGeneration : MonoBehaviour
         {
             distanceBetweenPlayforms = Random.Range(minDistanceBetweenPlayforms, maxDistanceBetweenPlayforms);
             platformWidth = Random.Range(minPlatformWidth, maxPlatformWidth);
-            Debug.Log(distanceBetweenPlayforms);
-            Debug.Log(platformWidth);
-            
+
             transform.position = new Vector3(transform.position.x + platformWidth + distanceBetweenPlayforms,
                 transform.position.y, transform.position.z);
             
-            newPlatform = Instantiate(platform, transform.position, Quaternion.identity);
+            newPlatform = ObjectPool.Instance.GetPooledObject();
+            newPlatform.transform.position = transform.position;
             newPlatform.gameObject.transform.localScale =
                 new Vector3(platformWidth, newPlatform.gameObject.transform.localScale.y);
+            newPlatform.GetComponent<PlatformDestroyer>().destroyPoint = destroyPoint;
             platforms.Add(newPlatform);
             buildPoints.Add(newPlatform.GetComponentInChildren<BuildPoint>().gameObject);
 

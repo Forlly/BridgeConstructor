@@ -21,12 +21,8 @@ public class CharacterController : MonoBehaviour
     {
         isBuild = true;
         float step = 0;
-        Debug.Log("pos");
-        Debug.Log(transform.position);
-        Debug.Log(currentPlatform);
-        Debug.Log(PlatformGeneration.Instance.buildPoints[currentPlatform]);
-        Debug.Log(PlatformGeneration.Instance.platforms[currentPlatform].name);
-        while (transform.position != PlatformGeneration.Instance.platforms[currentPlatform].transform.position)
+
+        while (transform.position.x <= PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position.x)
         {
             step += Time.deltaTime * speed;
             transform.position = Vector3.MoveTowards(transform.position,
@@ -36,5 +32,7 @@ public class CharacterController : MonoBehaviour
         }
 
         currentPlatform++;
+        Debug.Log(currentPlatform);
+       // StartCoroutine(MoveToNextPlatform());
     }
 }
