@@ -21,7 +21,7 @@ public class PlatformGeneration : MonoBehaviour
     public List<GameObject> buildPoints;
 
     public static PlatformGeneration Instance;
-
+    
     private void Start()
     {
         Instance = this;
@@ -46,5 +46,6 @@ public class PlatformGeneration : MonoBehaviour
             buildPoints.Add(newPlatform.GetComponentInChildren<BuildPoint>().gameObject);
 
         }
+        
     }
 }
