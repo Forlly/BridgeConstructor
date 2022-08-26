@@ -4,13 +4,19 @@ using UnityEngine;
 
 public class CharacterController : MonoBehaviour
 {
+    public static CharacterController Instance;
+    
     [SerializeField] private Animator animator;
     
     [SerializeField] private float speed = 1f;
     
     [SerializeField] private GameObject bridge;
+    [SerializeField] private GameObject shadowBridge;
     [SerializeField] private GameObject bridgeImg;
-    [SerializeField] private float maxSizeBridge = 5f;
+    [SerializeField] private float maxSizeBridge = 6f;
+
+    [SerializeField] private AudioSource buildBridgeSound;
+    [SerializeField] private AudioSource gameOverSound;
     
     private bool isBuild = false;
     private bool isMoving = true;
@@ -24,6 +30,7 @@ public class CharacterController : MonoBehaviour
 
     private void Start()
     {
+        Instance = this;
         isMoving = true;
         Debug.Log(isMoving);
     }
@@ -52,17 +59,22 @@ public class CharacterController : MonoBehaviour
         isMoving = false;
         animator.SetBool("isMooving", true);
 
-        while (transform.position.x <= PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position.x - transform.localScale.x * 1.5f)
+        while (transform.position.x <= PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position.x 
+               - transform.localScale.x * 1.5f)
         {
             
             transform.position = Vector3.MoveTowards(transform.position,
                 new Vector3(PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position.x,
                     transform.position.y, transform.position.z), speed);
-            if (transform.position.y < PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position.y)
+            
+            if (transform.position.y - transform.localScale.y*2 < 
+                PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position.y)
             {
                 animator.SetBool("isMooving", false);
+                gameOverSound.Play();
                 StopAllCoroutines();
             }
+           
             
             if (transform.position.x
                 >= PlatformGeneration.Instance.platforms[currentPlatform].GetComponent<Collider2D>().bounds.min.x 
@@ -73,7 +85,7 @@ public class CharacterController : MonoBehaviour
                 ScoreView.Instance.UpdateScore(score);
             }
             
-            yield return new WaitForSeconds(0.01f);
+            yield return new WaitForSeconds(0.015f);
         }
 
         
@@ -87,7 +99,6 @@ public class CharacterController : MonoBehaviour
         }
         
         
-        Debug.Log(currentPlatform);
         isAddScore = true;
         isBuild = true;
         animator.SetBool("isMooving", false);
@@ -95,42 +106,81 @@ public class CharacterController : MonoBehaviour
 
     private IEnumerator BuildBridge()
     {
+        buildBridgeSound.Play();
         isBuild = false;
-
         Vector3 pos = PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position;
-        
+
+        GameObject crntShadowBridge = null;
+        if (currentPlatform <= 1)
+        {
+            crntShadowBridge = Instantiate(shadowBridge,pos, quaternion.identity);
+            crntShadowBridge.transform.eulerAngles = new Vector3(0, 0, -90);
+        }
+
         crntBridge = Instantiate(bridge,pos, quaternion.identity);
-        while (Input.GetMouseButton(0) && crntBridge.gameObject.transform.localScale.y <= 5)
+        
+        while (Input.GetMouseButton(0) && crntBridge.gameObject.transform.localScale.y <= maxSizeBridge)
         {
             crntBridge.gameObject.transform.localScale = new Vector3(crntBridge.gameObject.transform.localScale.x,
                 crntBridge.gameObject.transform.localScale.y + 0.05f);
 
-            yield return new WaitForSeconds(0.008f);
+            if (crntShadowBridge != null)
+            {
+                crntShadowBridge.gameObject.transform.localScale = new Vector3(
+                    crntShadowBridge.gameObject.transform.localScale.x,
+                    crntShadowBridge.gameObject.transform.localScale.y + 0.05f);
+            }
+            
+            
+            yield return new WaitForSeconds(0.01f);
+        }
+        buildBridgeSound.Stop();
+        
+        int step = 0;
+        while (step != -90)
+        {
+            step -= 1;
+            crntBridge.gameObject.transform.eulerAngles = new Vector3(0.0f, 0.0f, step);
+            yield return new WaitForSeconds(0.001f);
         }
         
-        crntBridge.gameObject.transform.eulerAngles = new Vector3(0.0f, 0.0f, -90.0f);
         currentPlatform++;
         isMoving = true;
-        
     }
 
     private IEnumerator CallToBuild()
     {
         isCallToBuild = true;
         Vector3 pos = PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position;
-        GameObject tmpBuildImg = Instantiate(bridgeImg, new Vector3(pos.x, pos.y + 5f, pos.z), Quaternion.identity);
+        bridgeImg.SetActive(true);
+        bridgeImg.transform.position = new Vector3(pos.x, pos.y + 5f, pos.z);
+
         while (isBuild && !Input.GetMouseButtonDown(0) && !isMoving)
         {
-            if (tmpBuildImg.transform.eulerAngles == new Vector3(0.0f, 0.0f, -90.0f))
-                tmpBuildImg.transform.eulerAngles = new Vector3(0.0f, 0.0f, 0.0f);
+            if (bridgeImg.transform.rotation == Quaternion.Euler(0,0,45))
+            {
+                bridgeImg.transform.rotation = Quaternion.Euler(0, 0, 0);
+            }
             
             else
-                tmpBuildImg.transform.eulerAngles =  new Vector3(0.0f, 0.0f, -90.0f);
+                bridgeImg.transform.rotation = Quaternion.Euler(0,0,45);
             
             
-            Debug.Log(tmpBuildImg.transform.eulerAngles);
-            yield return new WaitForSeconds(0.008f);
+            yield return new WaitForSeconds(0.5f);
         }
+        
+        bridgeImg.SetActive(false);
+        isCallToBuild = false;
+    }
+
+    public void Relive()
+    {
+        currentPlatform -= 1;
+        Bounds tmp = PlatformGeneration.Instance.platforms[currentPlatform].GetComponent<Collider2D>().bounds;
+        transform.position = new Vector3(tmp.min.x + transform.localScale.x * 2, tmp.max.y + transform.localScale.y*2,
+            transform.position.z);
+        Destroy(crntBridge);
+        isMoving = true;
     }
     
 }

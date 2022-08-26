@@ -16,6 +16,7 @@ public class Menu : MonoBehaviour
     {
         Instance = this;
         restartButton.onClick.AddListener(RestartGame);
+        reliveButton.onClick.AddListener(ReliveCharacter);
     }
 
 
@@ -30,5 +31,15 @@ public class Menu : MonoBehaviour
         Time.timeScale = 1;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         scoreText.gameObject.SetActive(true);
+    }
+    
+    private void ReliveCharacter()
+    {
+        Debug.Log("Relive");
+        Time.timeScale = 1;
+        menuPanel.SetActive(false);
+        scoreText.gameObject.SetActive(true);
+
+        CharacterController.Instance.Relive();
     }
 }
