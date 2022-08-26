@@ -9,6 +9,7 @@ public class Menu : MonoBehaviour
     [SerializeField] private Text endingScoreText;
     [SerializeField] private Button restartButton;
     [SerializeField] private Button reliveButton;
+    [SerializeField] private Button pauseButton;
 
     public static Menu Instance;
 
@@ -22,23 +23,24 @@ public class Menu : MonoBehaviour
 
     public void GameOver()
     {
+        pauseButton.gameObject.SetActive(false);
         scoreText.gameObject.SetActive(false);
-        Time.timeScale = 0;
         endingScoreText.text = $"Your score: {scoreText.text}";
     }
-    private void RestartGame()
+    public void RestartGame()
     {
         Time.timeScale = 1;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         scoreText.gameObject.SetActive(true);
+        pauseButton.gameObject.SetActive(true);
     }
     
-    private void ReliveCharacter()
+    public void ReliveCharacter()
     {
-        Debug.Log("Relive");
         Time.timeScale = 1;
         menuPanel.SetActive(false);
         scoreText.gameObject.SetActive(true);
+        pauseButton.gameObject.SetActive(true);
 
         CharacterController.Instance.Relive();
     }

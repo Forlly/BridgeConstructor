@@ -10,7 +10,7 @@ public class PlatformGeneration : MonoBehaviour
 
     [SerializeField] private float minDistanceBetweenPlayforms;
     [SerializeField] private float maxDistanceBetweenPlayforms;
-    private float distanceBetweenPlayforms;
+    private float distanceBetweenPlatforms;
     
     [SerializeField] private float minPlatformWidth;
     [SerializeField] private float maxPlatformWidth;
@@ -31,10 +31,10 @@ public class PlatformGeneration : MonoBehaviour
     {
         if (transform.position.x < spawnPoint.position.x)
         {
-            distanceBetweenPlayforms = Random.Range(minDistanceBetweenPlayforms, maxDistanceBetweenPlayforms);
+            distanceBetweenPlatforms = Random.Range(minDistanceBetweenPlayforms, maxDistanceBetweenPlayforms);
             platformWidth = Random.Range(minPlatformWidth, maxPlatformWidth);
 
-            transform.position = new Vector3(transform.position.x + platformWidth + distanceBetweenPlayforms,
+            transform.position = new Vector3(transform.position.x + platformWidth + distanceBetweenPlatforms,
                 transform.position.y, transform.position.z);
             
             newPlatform = ObjectPool.Instance.GetPooledObject();

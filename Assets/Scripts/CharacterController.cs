@@ -11,7 +11,9 @@ public class CharacterController : MonoBehaviour
     [SerializeField] private float speed = 1f;
     
     [SerializeField] private GameObject bridge;
+    [SerializeField] private float speedBuilding;
     [SerializeField] private GameObject shadowBridge;
+    [SerializeField] private float speedFalling;
     [SerializeField] private GameObject bridgeImg;
     [SerializeField] private float maxSizeBridge = 6f;
 
@@ -31,33 +33,27 @@ public class CharacterController : MonoBehaviour
     private void Start()
     {
         Instance = this;
-        isMoving = true;
-        Debug.Log(isMoving);
+        isMoving = false;
+        StartCoroutine(MoveToNextPlatform());
     }
 
-    void Update()
+    public void TryToBuildBridge()
     {
-        if (isMoving)
-        {
-            StartCoroutine(MoveToNextPlatform());
-        }
-
-        if (isBuild && !Input.GetMouseButtonDown(0) && !isMoving && !isCallToBuild)
-        {
-            StartCoroutine(CallToBuild());
-        }
-        
-        if (isBuild && Input.GetMouseButtonDown(0))
-        {
+        if (isCallToBuild)
             StartCoroutine(BuildBridge());
-        }
-        
     }
-
+    
+    public void TryToStopBuildBridge()
+    {
+        isBuild = false;
+    }
+    
     private IEnumerator MoveToNextPlatform()
     {
-        isMoving = false;
+        isMoving = true;
         animator.SetBool("isMooving", true);
+
+        float step = speed * Time.fixedDeltaTime;
 
         while (transform.position.x <= PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position.x 
                - transform.localScale.x * 1.5f)
@@ -65,14 +61,15 @@ public class CharacterController : MonoBehaviour
             
             transform.position = Vector3.MoveTowards(transform.position,
                 new Vector3(PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position.x,
-                    transform.position.y, transform.position.z), speed);
+                    transform.position.y, transform.position.z), step);
             
             if (transform.position.y - transform.localScale.y*2 < 
                 PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position.y)
             {
+                isMoving = false;
                 animator.SetBool("isMooving", false);
-                gameOverSound.Play();
-                StopAllCoroutines();
+                PlaySound();
+                yield break;
             }
            
             
@@ -84,8 +81,8 @@ public class CharacterController : MonoBehaviour
                 score++;
                 ScoreView.Instance.UpdateScore(score);
             }
-            
-            yield return new WaitForSeconds(0.015f);
+
+            yield return null;
         }
 
         
@@ -94,58 +91,82 @@ public class CharacterController : MonoBehaviour
             > transform.position.x + 2 * gameObject.transform.localScale.x)
         {
             currentPlatform++;
-            isMoving = true;
+            StartCoroutine(MoveToNextPlatform());
             yield break;
         }
         
         
         isAddScore = true;
-        isBuild = true;
         animator.SetBool("isMooving", false);
+        isMoving = false;
+        StartCoroutine(CallToBuild());
+    }
+
+    public void PlaySound()
+    {
+        gameOverSound.Play();
     }
 
     private IEnumerator BuildBridge()
     {
         buildBridgeSound.Play();
-        isBuild = false;
+        isBuild = true;
         Vector3 pos = PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position;
 
-        GameObject crntShadowBridge = null;
+
         if (currentPlatform <= 1)
         {
-            crntShadowBridge = Instantiate(shadowBridge,pos, quaternion.identity);
-            crntShadowBridge.transform.eulerAngles = new Vector3(0, 0, -90);
+            shadowBridge.SetActive(true);
+            shadowBridge.transform.localScale = new Vector3(1,1,0);
+            shadowBridge.transform.position = pos;
+
         }
 
         crntBridge = Instantiate(bridge,pos, quaternion.identity);
-        
-        while (Input.GetMouseButton(0) && crntBridge.gameObject.transform.localScale.y <= maxSizeBridge)
-        {
-            crntBridge.gameObject.transform.localScale = new Vector3(crntBridge.gameObject.transform.localScale.x,
-                crntBridge.gameObject.transform.localScale.y + 0.05f);
 
-            if (crntShadowBridge != null)
+        float step = speedBuilding * Time.fixedDeltaTime;
+        
+        while (isBuild)
+        {
+            if (crntBridge.gameObject.transform.localScale.y >= maxSizeBridge)
             {
-                crntShadowBridge.gameObject.transform.localScale = new Vector3(
-                    crntShadowBridge.gameObject.transform.localScale.x,
-                    crntShadowBridge.gameObject.transform.localScale.y + 0.05f);
+                isBuild = false;
             }
-            
-            
-            yield return new WaitForSeconds(0.01f);
+            crntBridge.gameObject.transform.localScale = new Vector3(crntBridge.gameObject.transform.localScale.x,
+                crntBridge.gameObject.transform.localScale.y + step);
+
+            if (shadowBridge.activeInHierarchy)
+            {
+                shadowBridge.gameObject.transform.localScale = new Vector3(
+                    shadowBridge.gameObject.transform.localScale.x,
+                    shadowBridge.gameObject.transform.localScale.y + step);
+            }
+
+
+            yield return null;
         }
         buildBridgeSound.Stop();
-        
-        int step = 0;
-        while (step != -90)
+        isBuild = false;
+
+
+        step = speedFalling * Time.fixedDeltaTime;
+        float progress = 0;
+        while (progress > -90)
         {
-            step -= 1;
-            crntBridge.gameObject.transform.eulerAngles = new Vector3(0.0f, 0.0f, step);
-            yield return new WaitForSeconds(0.001f);
+            progress -= step;
+            crntBridge.gameObject.transform.eulerAngles = new Vector3(0.0f, 0.0f, progress);
+            yield return null;
         }
+        crntBridge.gameObject.transform.eulerAngles = new Vector3(0.0f, 0.0f, -90);
+        
+        if (shadowBridge.activeInHierarchy)
+        {
+            shadowBridge.SetActive(false);
+        }
+
         
         currentPlatform++;
-        isMoving = true;
+        StartCoroutine(MoveToNextPlatform());
     }
 
     private IEnumerator CallToBuild()
@@ -154,19 +175,18 @@ public class CharacterController : MonoBehaviour
         Vector3 pos = PlatformGeneration.Instance.buildPoints[currentPlatform].transform.position;
         bridgeImg.SetActive(true);
         bridgeImg.transform.position = new Vector3(pos.x, pos.y + 5f, pos.z);
-
-        while (isBuild && !Input.GetMouseButtonDown(0) && !isMoving)
+        
+        float progress = 0;
+        float targetAngle = 90f;
+        while (!isBuild)
         {
-            if (bridgeImg.transform.rotation == Quaternion.Euler(0,0,45))
+            if (progress < targetAngle)
             {
-                bridgeImg.transform.rotation = Quaternion.Euler(0, 0, 0);
+                progress = Mathf.PingPong(Time.time * 120, targetAngle);
+                bridgeImg.transform.rotation = Quaternion.Euler(0, 0, progress);
             }
-            
-            else
-                bridgeImg.transform.rotation = Quaternion.Euler(0,0,45);
-            
-            
-            yield return new WaitForSeconds(0.5f);
+
+            yield return null;
         }
         
         bridgeImg.SetActive(false);
@@ -175,12 +195,16 @@ public class CharacterController : MonoBehaviour
 
     public void Relive()
     {
-        currentPlatform -= 1;
+        if (currentPlatform != 0)
+        {
+            currentPlatform -= 1;
+        }
+        
         Bounds tmp = PlatformGeneration.Instance.platforms[currentPlatform].GetComponent<Collider2D>().bounds;
         transform.position = new Vector3(tmp.min.x + transform.localScale.x * 2, tmp.max.y + transform.localScale.y*2,
             transform.position.z);
         Destroy(crntBridge);
-        isMoving = true;
+        StartCoroutine(MoveToNextPlatform());
     }
     
 }
