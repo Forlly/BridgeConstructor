@@ -1302,7 +1302,8 @@ PrefabInstance:
       propertyPath: destroyPoint
       value: 
       objectReference: {fileID: 808446890}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5101787754566497017, guid: f2becc2cc147d4041ba6373ac77e73b5, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: f2becc2cc147d4041ba6373ac77e73b5, type: 3}
 --- !u!1 &1022677069
 GameObject:

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -43,8 +42,7 @@ public class PlatformGeneration : MonoBehaviour
                 new Vector3(platformWidth, newPlatform.gameObject.transform.localScale.y);
             newPlatform.GetComponent<PlatformDestroyer>().destroyPoint = destroyPoint;
             platforms.Add(newPlatform);
-            buildPoints.Add(newPlatform.GetComponentInChildren<BuildPoint>().gameObject);
-
+            buildPoints.Add(newPlatform.transform.Find("BuildPoint").gameObject);
         }
         
     }
